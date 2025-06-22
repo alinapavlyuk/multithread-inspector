@@ -1,0 +1,10 @@
+.history
+.vscode
+node_modules
+dist
+.vscodeignore
+.vscode-test.mjs
+multithread-inspector-0.0.1.vsix
+eslint.config.mjs
+out
+.DS_Store

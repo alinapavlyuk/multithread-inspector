@@ -1,0 +1,69 @@
+{
+  "name": "multithread-inspector",
+  "displayName": "Multithread Inspector",
+  "description": "An extension for visualizing execution flows in multithreaded C++ programs. Automatically analyzes your code and generates an interactive graph showing how threads, mutexes, and other synchronization objects interact.",
+  "version": "0.0.2",
+  "publisher": "apvlk",
+  "engines": {
+    "vscode": "^1.100.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "multithread-inspector.analyzeThreads",
+        "title": "Analyze Thread Flow"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "multithread-inspector.analyzeThreads",
+          "when": "editorLangId == cpp || editorLangId == c",
+          "group": "navigation"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "multithread-inspector.analyzeThreads",
+          "when": "resourceExtname == .cpp || resourceExtname == .cc || resourceExtname == .cxx",
+          "group": "navigation"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "multithread-inspector.analyzeThreads",
+        "key": "ctrl+shift+t",
+        "mac": "cmd+shift+t",
+        "when": "editorLangId == cpp || editorLangId == c"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/node": "20.x",
+    "@types/vscode": "^1.100.0",
+    "@typescript-eslint/eslint-plugin": "^8.31.1",
+    "@typescript-eslint/parser": "^8.31.1",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.5.2",
+    "eslint": "^9.25.1",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "tree-sitter": "^0.21.0",
+    "tree-sitter-cpp": "^0.21.0"
+  }
+}
