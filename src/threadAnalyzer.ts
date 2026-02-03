@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import Parser from 'tree-sitter';
 import Cpp from 'tree-sitter-cpp';
 
-// Інтерфейс для зберігання інформації про потоки, синхронізацію, функції та контекст
+// Interface for storing information about threads, synchronization, functions, and context
 export interface ThreadInfo {
     threads: ThreadCreation[];
     synchronization: SynchronizationPrimitive[];
@@ -10,7 +10,7 @@ export interface ThreadInfo {
     contextualData: ContextualData;
 }
 
-// Інтерфейс для опису створення потоку
+// Interface for describing thread creation
 export interface ThreadCreation {
     type: 'std::thread' | 'std::async' | 'pthread_create' | 'unknown';
     line: number;
@@ -21,7 +21,7 @@ export interface ThreadCreation {
     creationContext: CreationContext;
 }
 
-// Інтерфейс для опису контексту створення потоку
+// Interface for describing the thread creation context
 export interface CreationContext {
     inLoop: boolean;
     loopType?: 'for' | 'while' | 'do-while';
@@ -33,7 +33,7 @@ export interface CreationContext {
     isInNestedConditional: boolean;
 }
 
-// Інтерфейс для опису примітивів синхронізації
+// Interface for describing synchronization primitives
 export interface SynchronizationPrimitive {
     type: 'mutex' | 'lock_guard' | 'unique_lock' | 'condition_variable' | 'atomic' | 'shared_ptr';
     line: number;
@@ -44,7 +44,7 @@ export interface SynchronizationPrimitive {
     associatedThreads?: string[];
 }
 
-// Інтерфейс для опису функцій у коді
+// Interface for describing functions in the code
 export interface FunctionInfo {
     name: string;
     line: number;
@@ -54,7 +54,7 @@ export interface FunctionInfo {
     synchronizationUsed: string[];
 }
 
-// Інтерфейс для зберігання статистики по потоках, синхронізації та спільних ресурсах
+// Interface for storing statistics on threads, synchronization, and shared resources
 export interface ContextualData {
     totalLoopThreads: number;
     conditionalThreads: number;
@@ -62,7 +62,7 @@ export interface ContextualData {
     sharedResources: SharedResource[];
 }
 
-// Інтерфейс для опису спільних ресурсів
+// Interface for describing shared resources
 export interface SharedResource {
     name: string;
     type: string;
@@ -71,7 +71,7 @@ export interface SharedResource {
     protectedBy?: string[];
 }
 
-// Внутрішній інтерфейс для зберігання інформації про контекст вузла
+// Internal interface for storing information about the node's context
 interface ContextInfo {
     type: string;
     line: number;
@@ -87,7 +87,7 @@ interface ContextInfo {
     parentLoops: string[];
 }
 
-// Внутрішній інтерфейс для зберігання інформації про оголошення змінних
+// Internal interface for storing information about variable declarations
 interface VariableDeclaration {
     name: string;
     type: string;
@@ -95,20 +95,20 @@ interface VariableDeclaration {
     scope: number;
 }
 
-// Клас для аналізу потоків у C++ коді
+// Class for analyzing threads in C++ code
 export class ThreadAnalyzer {
     private parser: Parser;
     private declaredThreadVectors: Map<string, VariableDeclaration> = new Map();
     private variableDeclarations: Map<string, VariableDeclaration> = new Map();
     private currentScope: string[] = [];
 
-    // Конструктор ініціалізує парсер для C++
+    // The constructor initializes the parser for C++
     constructor() {
         this.parser = new Parser();
         this.parser.setLanguage(Cpp as any);
     }
 
-    // Основний метод для аналізу документа VSCode
+    // The main method for analyzing a VSCode document
     async analyzeDocument(document: vscode.TextDocument): Promise<ThreadInfo> {
         const sourceCode = document.getText();
         const tree = this.parser.parse(sourceCode);
@@ -136,10 +136,10 @@ export class ThreadAnalyzer {
         return threadInfo;
     }
 
-    // Збір оголошень змінних (включаючи std::vector<std::thread>)
-    // Цей метод рекурсивно обходить дерево синтаксису та збирає оголошення змінних
-    // для векторів потоків та інших змінних, які можуть бути використані у створенні потоків.
-    // Він також визначає область видимості кожної змінної для подальшого аналізу.
+    // Collecting variable declarations (including std::vector<std::thread>)
+    // This method recursively traverses the syntax tree and collects variable declarations
+    // for thread vectors and other variables that can be used in thread creation.
+    // It also determines the scope of each variable for further analysis.
     private collectVariableDeclarations(node: Parser.SyntaxNode, sourceCode: string) {
         if (node.type === 'declaration') {
             const declText = sourceCode.slice(node.startIndex, node.endIndex);
@@ -179,7 +179,7 @@ export class ThreadAnalyzer {
         }
     }
 
-    // Визначаємо чи це нова область видимості
+    // We determine if this is a new scope
     private isNewScope(nodeType: string): boolean {
         return [
             'function_definition',
@@ -191,7 +191,7 @@ export class ThreadAnalyzer {
         ].includes(nodeType);
     }
 
-    // Рекурсивний обхід дерева синтаксису
+    // Recursive traversal of the syntax tree
     private walkTree(
         node: Parser.SyntaxNode,
         sourceCode: string,
@@ -206,7 +206,7 @@ export class ThreadAnalyzer {
         }
     }
 
-    // Аналізуємо контекст вузла (чи в циклі, чи в умовному операторі)
+    // We analyze the context of the node (whether it's in a loop or a conditional statement)
     private analyzeNodeContext(
         node: Parser.SyntaxNode,
         sourceCode: string,
@@ -214,16 +214,16 @@ export class ThreadAnalyzer {
     ): ContextInfo {
         const nodeType = node.type;
         const line = node.startPosition.row + 1;
-        // Фільтруємо контекст, щоб знайти предків-цикли та предків-умови
+        // We filter the context to find loop ancestors and conditional ancestors
         const parentLoops = contextStack.filter(ctx => this.isLoopNode(ctx.type));
         const parentConditionals = contextStack.filter(ctx => this.isConditionalNode(ctx.type) || this.isWithinConditionalScope(ctx, contextStack));
-        // Визначаємо, чи є поточний вузол циклом або умовним оператором
+        // We determine if the current node is a loop or a conditional statement
         const isCurrentLoop = this.isLoopNode(nodeType);
         const isCurrentConditional = this.isConditionalNode(nodeType) || this.isWithinConditionalScope({ type: nodeType, line } as ContextInfo, contextStack);
-        // Визначаємо, чи є поточний вузол в циклі або умовному операторі
+        // We determine if the current node is in a loop or a conditional statement
         const inLoop = isCurrentLoop || parentLoops.length > 0;
         const inConditional = isCurrentConditional || parentConditionals.length > 0 || this.isInConditionalBranch(node, sourceCode, contextStack);
-        // Визначаємо глибину вкладеності циклів та умовних операторів
+        // We determine the nesting depth of loops and conditional statements
         const loopDepth = parentLoops.length + (isCurrentLoop ? 1 : 0);
         const conditionalDepth = parentConditionals.length + (isCurrentConditional ? 1 : 0) + (this.isInConditionalBranch(node, sourceCode, contextStack) ? 1 : 0);
 
@@ -243,24 +243,24 @@ export class ThreadAnalyzer {
         };
     }
 
-    // Генерує унікальний ідентифікатор для поточного стеку контексту
+    // Generates a unique identifier for the current context stack
     private generateScopeId(contextStack: ContextInfo[]): string {
         return contextStack.map(ctx => `${ctx.type}:${ctx.line}`).join('|');
     }
 
-    // Повертає тип циклу для останнього предка-циклу у стеку
+    // Returns the loop type for the last loop ancestor in the stack
     private getLastAncestorLoopType(parentLoops: ContextInfo[]): 'for' | 'while' | 'do-while' | undefined {
         if (!parentLoops.length) return undefined;
         return this.getLoopType(parentLoops[parentLoops.length - 1].type);
     }
 
-    // Повертає тип умовного оператора для останнього предка-умови у стеку
+    // Returns the conditional operator type for the last conditional ancestor in the stack
     private getLastAncestorConditionalType(parentConditionals: ContextInfo[]): 'if' | 'switch' | 'ternary' | undefined {
         if (!parentConditionals.length) return undefined;
         return this.getConditionalType(parentConditionals[parentConditionals.length - 1].type);
     }
 
-    // Аналізуємо вузол: потоки, синхронізація, функції, ресурси
+    // We analyze the node: threads, synchronization, functions, resources
     private analyzeNode(
         node: Parser.SyntaxNode,
         sourceCode: string,
@@ -290,7 +290,7 @@ export class ThreadAnalyzer {
         }
     }
 
-    // Аналіз створення потоків (async, pthread, emplace_back)
+    // Analysis of thread creation (async, pthread, emplace_back)
     private analyzeThreadCreationWithContext(
         node: Parser.SyntaxNode,
         sourceCode: string,
@@ -351,7 +351,7 @@ export class ThreadAnalyzer {
         }
     }
 
-    // Витягуємо ім'я вектора для emplace_back
+    // We extract the vector name for emplace_back
     private extractVectorNameFromEmplaceBack(node: Parser.SyntaxNode, sourceCode: string): string | null {
         const fieldExpr = this.findChildOfType(node, 'field_expression');
         if (fieldExpr) {
@@ -363,7 +363,7 @@ export class ThreadAnalyzer {
         return null;
     }
 
-    // Рекурсивно шукає перший дочірній вузол з заданим типом
+    // Recursively searches for the first child node of the specified type
     private findChildOfType(node: Parser.SyntaxNode, type: string): Parser.SyntaxNode | null {
         for (const child of node.children) {
             if (child.type === type) return child;
@@ -373,7 +373,7 @@ export class ThreadAnalyzer {
         return null;
     }
 
-    // Аналіз оголошення std::thread
+    // Analysis of std::thread declaration
     private analyzeThreadDeclarationWithContext(
         node: Parser.SyntaxNode,
         sourceCode: string,
@@ -398,7 +398,7 @@ export class ThreadAnalyzer {
         }
     }
 
-    // Формуємо контекст створення потоку
+    // We form the context of thread creation
     private buildCreationContext(contextStack: ContextInfo[]): CreationContext {
         const inLoop = contextStack.some(ctx => ctx.inLoop || this.isLoopNode(ctx.type));
         const directConditional = contextStack.some(ctx => ctx.inConditional || this.isConditionalNode(ctx.type));
@@ -421,7 +421,7 @@ export class ThreadAnalyzer {
         };
     }
 
-    // Оновлюємо статистику по потоках
+    // We update the statistics on threads
     private updateContextualStats(threadInfo: ThreadInfo, context: CreationContext) {
         if (context.inLoop) threadInfo.contextualData.totalLoopThreads++;
         if (context.inConditional || context.isInNestedConditional || context.conditionalDepth > 0) {
@@ -429,7 +429,7 @@ export class ThreadAnalyzer {
         }
     }
 
-    // Аналіз синхронізації (mutex, atomic, condition_variable, shared_ptr)
+    // Analysis of synchronization (mutex, atomic, condition_variable, shared_ptr)
     private analyzeAdvancedSynchronization(
         node: Parser.SyntaxNode,
         sourceCode: string,
@@ -479,7 +479,7 @@ export class ThreadAnalyzer {
         }
     }
 
-    // Додаємо до nestedSynchronization якщо вкладеність > 2
+    // We add to nestedSynchronization if the nesting is > 2
     private checkNestedSynchronization(
         sync: SynchronizationPrimitive,
         threadInfo: ThreadInfo,
@@ -490,7 +490,7 @@ export class ThreadAnalyzer {
         }
     }
 
-    // Аналіз оголошення shared_ptr
+    // Analysis of shared_ptr declaration
     private analyzeSharedResources(
         node: Parser.SyntaxNode,
         sourceCode: string,
@@ -512,7 +512,7 @@ export class ThreadAnalyzer {
         }
     }
 
-    // Аналіз функцій
+    // Analysis of functions
     private analyzeFunctionWithContext(
         node: Parser.SyntaxNode,
         sourceCode: string,
@@ -534,7 +534,7 @@ export class ThreadAnalyzer {
         }
     }
 
-    // Аналіз синхронізації у довільному тілі функції/лямбди
+    // Analysis of synchronization in an arbitrary function/lambda body
     private findSynchronizationInFunctionBody(
         functionBody: string,
         threadInfo: ThreadInfo
@@ -573,7 +573,7 @@ export class ThreadAnalyzer {
         }
     }
 
-    // Пост-обробка: встановлення зв'язків між потоками, функціями, синхронізацією
+    // Post-processing: establishing connections between threads, functions, synchronization
     private postProcessAnalysis(threadInfo: ThreadInfo) {
         threadInfo.functions.forEach(func => {
             const threadUsage = threadInfo.threads.filter(t => t.functionName === func.name).length;
@@ -586,11 +586,11 @@ export class ThreadAnalyzer {
                 if (!t.functionName) return false;
                 const func = threadInfo.functions.find(f => f.name === t.functionName);
                 if (!func) return false;
-                // 1. Якщо функція явно використовує ім'я цієї примітиви (наприклад, print_mutex)
+                // 1. If the function explicitly uses the name of this primitive (e.g., print_mutex)
                 if (sync.name && func.synchronizationUsed && func.synchronizationUsed.includes(sync.name)) return true;
-                // 2. Якщо функція використовує тип примітиви (mutex, atomic, ...) і це глобальна змінна
+                // 2. If the function uses the primitive type (mutex, atomic, ...) and it is a global variable
                 if (func.synchronizationUsed && func.synchronizationUsed.includes(sync.type)) {
-                    // Додатково перевіряємо, чи ім'я примітиви згадується у тілі функції
+                    // Additionally, we check if the primitive's name is mentioned in the function body
                     if (sync.name && this.functionBodyMentions(sync.name, func, threadInfo)) return true;
                 }
                 return false;
@@ -602,12 +602,12 @@ export class ThreadAnalyzer {
         (threadInfo as any).threadSyncReport = this.generateThreadSyncReport(threadInfo);
     }
 
-    // Перевіряє, чи тіло функції містить ім'я примітиви 
+    // Checks if the function body contains the name of the primitive
     private functionBodyMentions(syncName: string, func: FunctionInfo, threadInfo: ThreadInfo): boolean {
         return func.synchronizationUsed.includes(syncName);
     }
 
-    // Визначаємо які потоки використовують спільні ресурси
+    // We determine which threads use shared resources
     private analyzeSharedResourceAccess(threadInfo: ThreadInfo) {
         threadInfo.contextualData.sharedResources.forEach(resource => {
             const associatedThreads = threadInfo.threads.filter(t =>
@@ -621,7 +621,7 @@ export class ThreadAnalyzer {
         });
     }
 
-    // Допоміжні методи для визначення типу вузла
+    // Helper methods for determining the node type
     private isLoopNode(nodeType: string): boolean {
         return ['for_statement', 'while_statement', 'do_statement'].includes(nodeType);
     }
@@ -630,7 +630,7 @@ export class ThreadAnalyzer {
         return ['if_statement', 'switch_statement', 'conditional_expression', 'else_clause'].includes(nodeType);
     }
 
-    // Повертає тип циклу за типом вузла
+    // Returns the loop type by the node type
     private getLoopType(nodeType: string): 'for' | 'while' | 'do-while' | undefined {
         switch (nodeType) {
             case 'for_statement': return 'for';
@@ -640,7 +640,7 @@ export class ThreadAnalyzer {
         }
     }
 
-    // Повертає тип умовного оператора за типом вузла
+    // Returns the conditional operator type by the node type
     private getConditionalType(nodeType: string): 'if' | 'switch' | 'ternary' | undefined {
         switch (nodeType) {
             case 'if_statement': return 'if';
@@ -651,7 +651,7 @@ export class ThreadAnalyzer {
         }
     }
 
-    // Повертає тип циклу для найближчого предка у стеку контексту
+    // Returns the loop type for the nearest ancestor in the context stack
     private getCurrentLoopType(contextStack: ContextInfo[]): 'for' | 'while' | 'do-while' | undefined {
         for (let i = contextStack.length - 1; i >= 0; i--) {
             if (contextStack[i].loopType) return contextStack[i].loopType;
@@ -659,7 +659,7 @@ export class ThreadAnalyzer {
         return undefined;
     }
 
-    // Повертає тип умовного оператора для найближчого предка у стеку контексту
+    // Returns the conditional operator type for the nearest ancestor in the context stack
     private getCurrentConditionalType(contextStack: ContextInfo[]): 'if' | 'switch' | 'ternary' | undefined {
         for (let i = contextStack.length - 1; i >= 0; i--) {
             if (contextStack[i].conditionalType) return contextStack[i].conditionalType;
@@ -667,7 +667,7 @@ export class ThreadAnalyzer {
         return undefined;
     }
 
-    // Пошук синхронізації у функції
+    // Search for synchronization in a function
     private findSynchronizationInFunction(
         node: Parser.SyntaxNode,
         sourceCode: string,
@@ -677,7 +677,7 @@ export class ThreadAnalyzer {
         return this.findSynchronizationInFunctionBody(functionBody, threadInfo);
     }
 
-    // Витягуємо ім'я функції
+    // We extract the function name
     private extractFunctionName(node: Parser.SyntaxNode, sourceCode: string): string | undefined {
         for (const child of node.children) {
             if (child.type === 'identifier') return sourceCode.slice(child.startIndex, child.endIndex);
@@ -686,12 +686,12 @@ export class ThreadAnalyzer {
         return undefined;
     }
 
-    // Перевірка патерну
+    // Pattern check
     private matchesPattern(text: string, pattern: RegExp): boolean {
         return pattern.test(text);
     }
 
-    // Витягуємо контекст навколо вузла
+    // We extract the context around the node
     private getContext(node: Parser.SyntaxNode, sourceCode: string, maxLength: number = 100): string {
         const context = sourceCode.slice(
             Math.max(0, node.startIndex - 50),
@@ -700,13 +700,13 @@ export class ThreadAnalyzer {
         return context.length > maxLength ? context.substring(0, maxLength) + '...' : context;
     }
 
-    // Витягуємо ім'я змінної з оголошення
+    // We extract the variable name from the declaration
     private extractVariableName(text: string): string | undefined {
         const match = text.match(/(\w+)\s*[;\(=]/);
         return match ? match[1] : undefined;
     }
 
-    // Витягуємо ім'я функції для std::thread
+    // We extract the function name for std::thread
     private extractThreadFunctionFromDeclaration(declarationText: string): string | undefined {
         // Try to match std::thread t(...);
         let match = declarationText.match(/std::thread\s+\w+\s*\(\s*([^,\)]+)/);
@@ -725,7 +725,7 @@ export class ThreadAnalyzer {
         return undefined;
     }
 
-    // Витягуємо ціль потоку з виклику emplace_back або push_back
+    // We extract the thread target from the emplace_back or push_back call
     private extractThreadTargetFromContainerCall(callText: string, method: 'emplace_back' | 'push_back'): string | undefined {
         let match: RegExpMatchArray | null = null;
         if (method === 'emplace_back') {
@@ -741,7 +741,7 @@ export class ThreadAnalyzer {
         return undefined;
     }
 
-    // Витягуємо ім'я функції для std::async
+    // We extract the function name for std::async
     private extractAsyncFunction(callText: string): string | undefined {
         const match = callText.match(/std::async\s*\([^,]*,\s*([^,\)]+)/) ||
             callText.match(/std::async\s*\(\s*([^,\)]+)/);
@@ -760,13 +760,13 @@ export class ThreadAnalyzer {
         return undefined;
     }
 
-    // Витягуємо ім'я функції для pthread_create
+    // We extract the function name for pthread_create
     private extractPthreadFunction(callText: string): string | undefined {
         const match = callText.match(/pthread_create\s*\([^,]*,[^,]*,\s*([^,\)]+)/);
         return match ? match[1].trim() : undefined;
     }
 
-    // Чи вузол знаходиться в умовній гілці (if/else)
+    // Whether the node is in a conditional branch (if/else)
     private isInConditionalBranch(node: Parser.SyntaxNode, sourceCode: string, contextStack: ContextInfo[]): boolean {
         const hasIfParent = contextStack.some(ctx => ctx.type === 'if_statement');
         if (node.parent) {
@@ -807,7 +807,7 @@ export class ThreadAnalyzer {
         return hasIfParent;
     }
 
-    // Чи контекст є умовним (для вкладених структур)
+    // Whether the context is conditional (for nested structures)
     private isWithinConditionalScope(ctx: ContextInfo, contextStack: ContextInfo[]): boolean {
         for (let i = contextStack.length - 1; i >= Math.max(0, contextStack.length - 3); i--) {
             const parentCtx = contextStack[i];
@@ -816,7 +816,7 @@ export class ThreadAnalyzer {
         return false;
     }
 
-    // Генерує звіт про використання потоками примітивів синхронізації
+    // Generates a report on the use of synchronization primitives by threads
     private generateThreadSyncReport(threadInfo: ThreadInfo): string {
         let report = 'Thread to Synchronization Primitives Usage:\n';
         for (const thread of threadInfo.threads) {

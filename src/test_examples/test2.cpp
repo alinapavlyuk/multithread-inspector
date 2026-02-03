@@ -1,4 +1,4 @@
-// Тестовий код сценарію 2: Аналіз коду з помилками компіляції
+// Test code for scenario 2: Analysis of code with compilation errors
 
 #include <thread>
 void task(

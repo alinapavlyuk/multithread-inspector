@@ -9,7 +9,7 @@
 #include <chrono>
 #include <queue>
 
-// Глобальні змінні для синхронізації
+// Global variables for synchronization
 std::mutex print_mutex;
 std::mutex queue_mutex;
 std::mutex data_mutex;
@@ -22,19 +22,19 @@ std::atomic<bool> shutdown_flag{false};
 std::shared_ptr<std::queue<int>> shared_queue = std::make_shared<std::queue<int>>();
 std::shared_ptr<std::vector<int>> shared_results = std::make_shared<std::vector<int>>();
 
-// Простий воркер для циклічного створення потоків
+// Simple worker for cyclic thread creation
 void cyclic_worker(int id, const std::string &type)
 {
     std::unique_lock<std::mutex> lock(print_mutex);
     std::cout << "Cyclic worker [" << type << "] " << id << " started\n";
     lock.unlock();
 
-    // Симуляція роботи
+    // Simulation of work
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
     task_counter.fetch_add(1);
 }
 
-// Producer для condition_variable тесту
+// Producer for condition_variable test
 void producer_worker(int items_to_produce)
 {
     for (int i = 0; i < items_to_produce; ++i)
@@ -49,7 +49,7 @@ void producer_worker(int items_to_produce)
     }
 }
 
-// Consumer для condition_variable тесту
+// Consumer for condition_variable test
 void consumer_worker(int id)
 {
     while (!shutdown_flag.load())
@@ -64,7 +64,7 @@ void consumer_worker(int id)
             shared_queue->pop();
             lock.unlock();
 
-            // Обробка даних зі shared_ptr
+            // Processing data from shared_ptr
             {
                 std::lock_guard<std::mutex> result_lock(data_mutex);
                 shared_results->push_back(value * 2);
@@ -76,7 +76,7 @@ void consumer_worker(int id)
     }
 }
 
-// Функція з atomic операціями
+// Function with atomic operations
 void atomic_incrementer(int iterations)
 {
     for (int i = 0; i < iterations; ++i)
@@ -90,20 +90,20 @@ void atomic_incrementer(int iterations)
 
 int main()
 {
-    std::cout << "=== ТЕСТ ІТЕРАЦІЇ 2: ПОКРАЩЕНИЙ АНАЛІЗ ПОТОКІВ ===\n\n";
+    std::cout << "=== ITERATION 2 TEST: IMPROVED THREAD ANALYSIS ===\n\n";
 
-    // Змінні для контекстного аналізу
+    // Variables for contextual analysis
     int thread_count = 5;
     bool enable_parallel_processing = true;
     std::string processing_mode = "intensive";
 
     std::vector<std::thread> all_threads;
 
-    // 1. КОНТЕКСТНИЙ АНАЛІЗ: Потоки у циклах
-    std::cout << "1. Тест циклічного створення потоків:\n";
+    // 1. CONTEXTUAL ANALYSIS: Threads in loops
+    std::cout << "1. Test of cyclic thread creation:\n";
     for (int i = 0; i < thread_count; ++i)
     {
-        // Умовне створення потоків залежно від індексу
+        // Conditional thread creation depending on the index
         if (i % 2 == 0)
         {
             all_threads.emplace_back(cyclic_worker, i, "EVEN");
@@ -114,8 +114,8 @@ int main()
         }
     }
 
-    // 2. УМОВНЕ СТВОРЕННЯ: Switch-based thread creation
-    std::cout << "\n2. Тест умовного створення потоків (switch):\n";
+    // 2. CONDITIONAL CREATION: Switch-based thread creation
+    std::cout << "\n2. Test of conditional thread creation (switch):\n";
     for (int mode = 0; mode < 3; ++mode)
     {
         switch (mode)
@@ -135,7 +135,7 @@ int main()
             break;
 
         case 2:
-            // Множинне створення споживачів
+            // Multiple consumer creation
             for (int consumer_id = 0; consumer_id < 2; ++consumer_id)
             {
                 all_threads.emplace_back(consumer_worker, consumer_id);
@@ -144,16 +144,16 @@ int main()
         }
     }
 
-    // 3. ЗМІННІ, ЩО ВПЛИВАЮТЬ НА СТВОРЕННЯ ПОТОКІВ
-    std::cout << "\n3. Тест залежності від змінних:\n";
+    // 3. VARIABLES AFFECTING THREAD CREATION
+    std::cout << "\n3. Test of dependency on variables:\n";
     std::cout << "thread_count = " << thread_count << std::endl;
     std::cout << "enable_parallel_processing = " << std::boolalpha << enable_parallel_processing << std::endl;
     std::cout << "processing_mode = " << processing_mode << std::endl;
 
-    // 4. СИНХРОНІЗАЦІЯ: Різні типи блокувань
-    std::cout << "\n4. Тест синхронізаційних примітивів:\n";
+    // 4. SYNCHRONIZATION: Different types of locks
+    std::cout << "\n4. Test of synchronization primitives:\n";
 
-    // std::async з різними launch policies
+    // std::async with different launch policies
     auto future_async = std::async(std::launch::async, []()
                                    {
         std::lock_guard<std::mutex> lock(print_mutex);
@@ -167,8 +167,8 @@ int main()
         lock.unlock();
         return 24; });
 
-    // 5. SHARED_PTR операції
-    std::cout << "\n5. Тест shared_ptr операцій:\n";
+    // 5. SHARED_PTR operations
+    std::cout << "\n5. Test of shared_ptr operations:\n";
     std::shared_ptr<std::atomic<int>> shared_counter = std::make_shared<std::atomic<int>>(0);
 
     for (int i = 0; i < 3; ++i)
@@ -183,13 +183,13 @@ int main()
             std::cout << "Shared counter thread " << i << " finished\n"; });
     }
 
-    // Чекаємо трохи, потім завершуємо споживачів
+    // We wait a bit, then terminate the consumers
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
     shutdown_flag.store(true);
     cv_producer.notify_all();
 
-    // 6. ОЧІКУВАННЯ ЗАВЕРШЕННЯ ВСІХ ПОТОКІВ
-    std::cout << "\n6. Очікування завершення потоків...\n";
+    // 6. WAITING FOR ALL THREADS TO FINISH
+    std::cout << "\n6. Waiting for threads to finish...\n";
     for (auto &t : all_threads)
     {
         if (t.joinable())
@@ -198,19 +198,19 @@ int main()
         }
     }
 
-    // Отримання результатів async операцій
-    std::cout << "\nРезультати async операцій:\n";
+    // Getting the results of async operations
+    std::cout << "\nResults of async operations:\n";
     std::cout << "Async result: " << future_async.get() << std::endl;
     std::cout << "Deferred result: " << future_deferred.get() << std::endl;
 
-    // 7. ФІНАЛЬНА СТАТИСТИКА
-    std::cout << "\n=== ФІНАЛЬНА СТАТИСТИКА ===\n";
+    // 7. FINAL STATISTICS
+    std::cout << "\n=== FINAL STATISTICS ===\n";
     std::cout << "Task counter: " << task_counter.load() << std::endl;
     std::cout << "Shared counter: " << shared_counter->load() << std::endl;
     std::cout << "Processed results count: " << shared_results->size() << std::endl;
     std::cout << "Remaining queue items: " << shared_queue->size() << std::endl;
 
-    // Виведення оброблених результатів
+    // Output of processed results
     if (!shared_results->empty())
     {
         std::cout << "Processed values: ";
@@ -221,6 +221,6 @@ int main()
         std::cout << std::endl;
     }
 
-    std::cout << "\n=== ТЕСТ ЗАВЕРШЕНО ===\n";
+    std::cout << "\n=== TEST FINISHED ===\n";
     return 0;
 }

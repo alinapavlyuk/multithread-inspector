@@ -9,67 +9,67 @@ export function activate(context: vscode.ExtensionContext) {
 	const graphGenerator = new GraphGenerator();
 	const compilerValidator = new CompilerValidator();
 
-	// Команда для аналізу потоків
+	// Command for thread analysis
 	const analyzeCommand = vscode.commands.registerCommand(
 		'multithread-inspector.analyzeThreads',
 		async () => {
 			const editor = vscode.window.activeTextEditor;
 			if (!editor) {
-				vscode.window.showErrorMessage('Немає активного редактора');
+				vscode.window.showErrorMessage('No active editor');
 				return;
 			}
 
 			const document = editor.document;
 			if (!['cpp', 'c'].includes(document.languageId)) {
-				vscode.window.showErrorMessage('Підтримуються тільки C/C++ файли');
+				vscode.window.showErrorMessage('Only C/C++ files are supported');
 				return;
 			}
 
 			try {
-				// Показуємо прогрес
+				// Show progress
 				await vscode.window.withProgress({
 					location: vscode.ProgressLocation.Notification,
-					title: "Аналіз потоків",
+					title: "Analyzing threads",
 					cancellable: false
 				}, async (progress) => {
-					progress.report({ increment: 0, message: "Перевірка компіляції..." });
+					progress.report({ increment: 0, message: "Checking compilation..." });
 
-					// Перевіряємо компіляцію
+					// Check compilation
 					const isValid = await compilerValidator.validateFile(document.uri.fsPath);
 					if (!isValid) {
-						vscode.window.showWarningMessage('Файл містить помилки компіляції. Аналіз може бути неточним.');
+						vscode.window.showWarningMessage('The file contains compilation errors. Analysis may be inaccurate.');
 					}
 
-					progress.report({ increment: 50, message: "Аналіз коду..." });
+					progress.report({ increment: 50, message: "Analyzing code..." });
 
-					// Аналізуємо потоки
+					// Analyze threads
 					const threadInfo = await threadAnalyzer.analyzeDocument(document);
 
-					progress.report({ increment: 80, message: "Генерація графу..." });
+					progress.report({ increment: 80, message: "Generating graph..." });
 
-					// Генеруємо граф
+					// Generate graph
 					const graphData = graphGenerator.generateGraph(threadInfo);
 
-					progress.report({ increment: 100, message: "Завершено" });
+					progress.report({ increment: 100, message: "Completed" });
 
-					// Показуємо результати
+					// Show results
 					ThreadGraphPanel.createOrShow(context.extensionUri, threadInfo, graphData, document.uri.fsPath);
 
-					// Також показуємо короткий звіт
-					const message = `Знайдено ${threadInfo.threads.length} потоків та ${threadInfo.synchronization.length} синхронізаційних примітивів`;
+					// Also show a brief report
+					const message = `Found ${threadInfo.threads.length} threads and ${threadInfo.synchronization.length} synchronization primitives`;
 					vscode.window.showInformationMessage(message);
 				});
 
 			} catch (error) {
-				vscode.window.showErrorMessage(`Помилка аналізу: ${error}`);
-				console.error('Помилка аналізу потоків:', error);
+				vscode.window.showErrorMessage(`Analysis error: ${error}`);
+				console.error('Thread analysis error:', error);
 			}
 		}
 	);
 
-	// Автоматичне оновлення панелі при збереженні C/C++ файлу
+	// Automatic panel update on saving a C/C++ file
 	vscode.workspace.onDidSaveTextDocument(async (document) => {
-		// Оновлюємо лише якщо панель відкрита і це C/C++ файл
+		// Update only if the panel is open and it's a C/C++ file
 		if (
 			ThreadGraphPanel.currentPanel &&
 			['cpp', 'c'].includes(document.languageId)
@@ -78,7 +78,7 @@ export function activate(context: vscode.ExtensionContext) {
 			const graphData = graphGenerator.generateGraph(threadInfo);
 			ThreadGraphPanel.currentPanel['_update'](threadInfo, graphData, document.uri.fsPath);
 
-			const message = `NEW: Знайдено ${threadInfo.threads.length} потоків та ${threadInfo.synchronization.length} синхронізаційних примітивів`;
+			const message = `NEW: Found ${threadInfo.threads.length} threads and ${threadInfo.synchronization.length} synchronization primitives`;
 			vscode.window.showInformationMessage(message);
 		}
 	});
@@ -87,5 +87,5 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 export function deactivate() {
-	console.log('C++ Thread Analyzer деактивовано');
+	console.log('C++ Thread Analyzer deactivated');
 }

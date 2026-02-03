@@ -2,24 +2,24 @@ import * as vscode from 'vscode';
 import { ThreadInfo } from './threadAnalyzer';
 import { GraphData, GraphGenerator } from './graphGenerator';
 
-// Клас для відображення панелі з графом потоків у VSCode
+// Class for displaying the thread graph panel in VSCode
 export class ThreadGraphPanel {
-    // Зберігаємо поточну відкриту панель (щоб не створювати дублікати)
+    // We store the currently open panel (to avoid creating duplicates)
     public static currentPanel: ThreadGraphPanel | undefined;
     public static readonly viewType = 'threadGraphView';
 
-    // Зберігаємо посилання на панель, URI розширення та масив для підписок
+    // We store a reference to the panel, the extension URI, and an array for subscriptions
     private readonly _panel: vscode.WebviewPanel;
     private readonly _extensionUri: vscode.Uri;
     private _disposables: vscode.Disposable[] = [];
 
-    // Створюємо або показуємо панель з графом потоків
+    // Create or show the thread graph panel
     public static createOrShow(extensionUri: vscode.Uri, threadInfo?: ThreadInfo, graphData?: GraphData, filePath?: string) {
         const column = vscode.window.activeTextEditor
             ? vscode.window.activeTextEditor.viewColumn
             : undefined;
 
-        // Якщо панель вже відкрита — просто оновлюємо її
+        // If the panel is already open - just update it
         if (ThreadGraphPanel.currentPanel) {
             ThreadGraphPanel.currentPanel._panel.reveal(column);
             if (threadInfo && graphData) {
@@ -28,7 +28,7 @@ export class ThreadGraphPanel {
             return;
         }
 
-        // Створюємо нову панель
+        // Create a new panel
         const panel = vscode.window.createWebviewPanel(
             ThreadGraphPanel.viewType,
             'C++ Thread Flow Graph',
@@ -45,21 +45,21 @@ export class ThreadGraphPanel {
 
         ThreadGraphPanel.currentPanel = new ThreadGraphPanel(panel, extensionUri);
 
-        // Оновлюємо панель з даними
+        // Update the panel with data
         if (threadInfo && graphData) {
             ThreadGraphPanel.currentPanel._update(threadInfo, graphData, filePath);
         }
     }
 
-    // Конструктор ініціалізує панель та підписки на події
+    // The constructor initializes the panel and event subscriptions
     private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri) {
         this._panel = panel;
         this._extensionUri = extensionUri;
 
-        // Підписуємося на закриття панелі
+        // We subscribe to the panel closing
         this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
 
-        // Обробляємо повідомлення з webview (наприклад, відкриття файлу)
+        // We process messages from the webview (e.g., opening a file)
         this._panel.webview.onDidReceiveMessage(
             message => {
                 switch (message.command) {
@@ -76,14 +76,14 @@ export class ThreadGraphPanel {
         );
     }
 
-    // Оновлюємо панель з новими даними про потоки та граф
+    // We update the panel with new data about threads and the graph
     private _update(threadInfo: ThreadInfo, graphData: GraphData, filePath?: string) {
         const webview = this._panel.webview;
         this._panel.title = "C++ Thread Flow Graph";
         this._panel.webview.html = this._getHtmlForWebview(webview, threadInfo, graphData, filePath);
     }
 
-    // Генеруємо HTML для панелі з графом потоків та текстовим звітом
+    // We generate HTML for the panel with the thread graph and text report
     private _getHtmlForWebview(webview: vscode.Webview, threadInfo: ThreadInfo, graphData: GraphData, filePath?: string): string {
         const graphGenerator = new GraphGenerator();
         const htmlVisualization = graphGenerator.generateHTMLVisualization(threadInfo, filePath);
@@ -245,7 +245,7 @@ export class ThreadGraphPanel {
 </html>`;
     }
 
-    // Відкриваємо файл у редакторі VSCode та переходимо до вказаного рядка
+    // We open the file in the VSCode editor and go to the specified line
     private async _openFileAtLine(fileName: string, line: number): Promise<void> {
         try {
             const doc = await vscode.workspace.openTextDocument(fileName);
@@ -255,11 +255,11 @@ export class ThreadGraphPanel {
             editor.selection = selection;
             editor.revealRange(selection, vscode.TextEditorRevealType.InCenter);
         } catch (error) {
-            vscode.window.showErrorMessage(`Не вдалося перейти до рядка ${line}: ${error}`);
+            vscode.window.showErrorMessage(`Failed to go to line ${line}: ${error}`);
         }
     }
 
-    // Очищуємо ресурси та закриваємо панель
+    // We clear the resources and close the panel
     public dispose() {
         ThreadGraphPanel.currentPanel = undefined;
         this._panel.dispose();
