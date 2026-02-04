@@ -1,4 +1,4 @@
-// Тестовий код сценарію 1: Аналіз коду з декларацією потоку та без помилок компіляції
+// Test code for scenario 1: Code analysis with thread declaration and no compilation errors
 
 #include <thread>
 void task() {}

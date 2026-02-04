@@ -22,30 +22,30 @@ export class CompilerValidator {
             const result = await this.compileFile(filePath);
             return result.success;
         } catch (error) {
-            console.error('Помилка валідації компіляції:', error);
+            console.error('Compilation validation error:', error);
             return false;
         }
     }
 
     async compileFile(filePath: string): Promise<CompilationResult> {
-        // Перевіряємо, чи існує файл
+        // Check if the file exists
         if (!fs.existsSync(filePath)) {
-            throw new Error(`Файл не знайдено: ${filePath}`);
+            throw new Error(`File not found: ${filePath}`);
         }
 
-        // Вибираємо компілятор
+        // Select the compiler
         if (!this.selectedCompiler) {
             this.selectedCompiler = await this.findAvailableCompiler();
         }
 
         if (!this.selectedCompiler) {
-            throw new Error('Не знайдено жодного C++ компілятора');
+            throw new Error('No C++ compiler found');
         }
 
-        // Генеруємо тимчасове ім'я для вихідного файла
+        // Generate a temporary name for the output file
         const outputPath = this.getTempOutputPath(filePath);
 
-        // Формуємо команду компіляції
+        // Form the compilation command
         const compileCommand = this.buildCompileCommand(
             this.selectedCompiler,
             filePath,
@@ -53,14 +53,14 @@ export class CompilerValidator {
         );
 
         try {
-            console.log(`Виконуємо команду: ${compileCommand}`);
+            console.log(`Executing command: ${compileCommand}`);
 
             const { stdout, stderr } = await execAsync(compileCommand);
 
-            // Перевіряємо, чи створився вихідний файл
+            // Check if the output file was created
             const success = fs.existsSync(outputPath);
 
-            // Видаляємо тимчасовий вихідний файл
+            // Delete the temporary output file
             this.cleanupTempFile(outputPath);
 
             return {
@@ -70,7 +70,7 @@ export class CompilerValidator {
                 exitCode: 0
             };
         } catch (error: any) {
-            // Видаляємо тимчасовий файл у разі помилки
+            // Delete the temporary file in case of an error
             this.cleanupTempFile(outputPath);
 
             return {
@@ -86,10 +86,10 @@ export class CompilerValidator {
         for (const compiler of this.compilers) {
             try {
                 await execAsync(`${compiler} --version`);
-                console.log(`Знайдено компілятор: ${compiler}`);
+                console.log(`Found compiler: ${compiler}`);
                 return compiler;
             } catch (error) {
-                // Компілятор недоступний, продовжуємо пошук
+                // Compiler is not available, continue searching
                 continue;
             }
         }
@@ -101,7 +101,7 @@ export class CompilerValidator {
         const tempDir = os.tmpdir();
         const tempName = `${parsedPath.name}_${Date.now()}`;
 
-        // Додаємо розширення залежно від платформи
+        // Add extension depending on the platform
         const extension = os.platform() === 'win32' ? '.exe' : '';
 
         return path.join(tempDir, `${tempName}${extension}`);
@@ -109,10 +109,10 @@ export class CompilerValidator {
 
     private buildCompileCommand(compiler: string, inputPath: string, outputPath: string): string {
         if (compiler === 'cl') {
-            // MSVC синтаксис
+            // MSVC syntax
             return `${compiler} /std:c++17 /W3 "${inputPath}" /Fe:"${outputPath}"`;
         } else {
-            // GCC/Clang синтаксис
+            // GCC/Clang syntax
             return `${compiler} -std=c++17 -Wall "${inputPath}" -o "${outputPath}"`;
         }
     }
@@ -121,10 +121,10 @@ export class CompilerValidator {
         try {
             if (fs.existsSync(filePath)) {
                 fs.unlinkSync(filePath);
-                // console.log(`Тимчасовий файл видалено: ${filePath}`);
+                // console.log(`Temporary file deleted: ${filePath}`);
             }
         } catch (error) {
-            // console.warn(`Не вдалося видалити тимчасовий файл ${filePath}:`, error);
+            // console.warn(`Failed to delete temporary file ${filePath}:`, error);
         }
     }
 
@@ -136,7 +136,7 @@ export class CompilerValidator {
         if (this.compilers.includes(compiler)) {
             this.selectedCompiler = compiler;
         } else {
-            throw new Error(`Непідтримуваний компілятор: ${compiler}`);
+            throw new Error(`Unsupported compiler: ${compiler}`);
         }
     }
 

@@ -1,4 +1,4 @@
-// Тестовий код сценарію 3: Аналіз коду з примітивами синхронізації
+// Test code for scenario 3: Code analysis with synchronization primitives
 
 #include <thread>
 #include <mutex>

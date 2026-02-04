@@ -1,13 +1,13 @@
 import { ThreadInfo, ThreadCreation, SynchronizationPrimitive } from './threadAnalyzer';
 
-// Опис структури даних для графу потоків
+// Description of the data structure for the thread graph
 export interface GraphData {
-    nodes: GraphNode[]; // Вузли графу
-    edges: GraphEdge[]; // Ребра графу
-    contextInfo: ContextAnalysis; // Інформація про контекст створення потоків
+    nodes: GraphNode[]; // Graph nodes
+    edges: GraphEdge[]; // Graph edges
+    contextInfo: ContextAnalysis; // Information about the thread creation context
 }
 
-// Вузол графу (потік, синхронізація, головний потік тощо)
+// Graph node (thread, synchronization, main thread, etc.)
 export interface GraphNode {
     id: string;
     label: string;
@@ -22,7 +22,7 @@ export interface GraphNode {
     shape?: string;
 }
 
-// Ребро графу (зв'язок між вузлами)
+// Graph edge (connection between nodes)
 export interface GraphEdge {
     from: string;
     to: string;
@@ -32,7 +32,7 @@ export interface GraphEdge {
     style?: string;
 }
 
-// Контекст створення потоку (чи в циклі/умові)
+// Thread creation context (in a loop/conditional)
 export interface ThreadContext {
     inLoop: boolean;
     inConditional: boolean;
@@ -41,13 +41,13 @@ export interface ThreadContext {
     nesting: number;
 }
 
-// Інформація про потоки, створені в умовах/циклах
+// Information about threads created in conditionals/loops
 export interface ContextAnalysis {
     conditionalThreads: ThreadCreation[];
     loopThreads: ThreadCreation[];
 }
 
-// Клас для генерації графу потоків та його візуалізації
+// Class for generating the thread graph and its visualization
 export class GraphGenerator {
     private readonly colors = {
         main: '#4A90E2',
@@ -73,13 +73,13 @@ export class GraphGenerator {
         }
     };
 
-    // Генерує структуру графу потоків на основі ThreadInfo
+    // Generates the thread graph structure based on ThreadInfo
     generateGraph(threadInfo: ThreadInfo): GraphData {
         const contextInfo = this.analyzeContext(threadInfo);
         const nodes: GraphNode[] = [];
         const edges: GraphEdge[] = [];
 
-        // Додаємо головний вузол (main thread)
+        // Add the main node (main thread)
         nodes.push({
             id: 'main',
             label: 'Main Thread',
@@ -88,7 +88,7 @@ export class GraphGenerator {
             shape: 'ellipse'
         });
 
-        // Додаємо вузли потоків та синхронізації
+        // Add thread and synchronization nodes
         this.addThreadNodes(threadInfo, contextInfo, nodes, edges);
         this.addSyncNodes(threadInfo, nodes, edges);
 
@@ -99,7 +99,7 @@ export class GraphGenerator {
         };
     }
 
-    // Аналізує потоки на предмет створення в умовах та циклах
+    // Analyzes threads for creation in conditionals and loops
     private analyzeContext(threadInfo: ThreadInfo): ContextAnalysis {
         const conditionalThreads: ThreadCreation[] = [];
         const loopThreads: ThreadCreation[] = [];
@@ -115,7 +115,7 @@ export class GraphGenerator {
         };
     }
 
-    // Визначає, чи створено потік в умовному контексті (if, switch, ?)
+    // Determines if a thread was created in a conditional context (if, switch, ?)
     private isConditionalContext(thread: ThreadCreation): boolean {
         if ((thread as any).creationContext && typeof (thread as any).creationContext.inConditional === 'boolean') {
             return (thread as any).creationContext.inConditional;
@@ -123,7 +123,7 @@ export class GraphGenerator {
         return false;
     }
 
-    // Визначає, чи створено потік у циклі (for, while, do)
+    // Determines if a thread was created in a loop (for, while, do)
     private isLoopContext(thread: ThreadCreation): boolean {
         if ((thread as any).creationContext && typeof (thread as any).creationContext.inLoop === 'boolean') {
             return (thread as any).creationContext.inLoop;
@@ -131,7 +131,7 @@ export class GraphGenerator {
         return false;
     }
 
-    // Додаємо вузли потоків
+    // Add thread nodes
     private addThreadNodes(
         threadInfo: ThreadInfo,
         contextInfo: ContextAnalysis,
@@ -188,7 +188,7 @@ export class GraphGenerator {
         });
     }
 
-    // Додаємо вузли синхронізації
+    // Add synchronization nodes
     private addSyncNodes(
         threadInfo: ThreadInfo,
         nodes: GraphNode[],
@@ -247,7 +247,7 @@ export class GraphGenerator {
                 edgeColor = this.colors.edge.waits;
             }
 
-            // Знаходимо пов'язані потоки для синхронізації
+            // Find related threads for synchronization
             const relatedThreads = new Set<string>();
             syncs.forEach(sync => {
                 if (sync.associatedThreads && sync.associatedThreads.length > 0) {
@@ -285,7 +285,7 @@ export class GraphGenerator {
         });
     }
 
-    // Групування потоків за контекстом
+    // Group threads by context
     private groupThreadsByContext(
         threads: ThreadCreation[],
         contextInfo: ContextAnalysis
@@ -326,7 +326,7 @@ export class GraphGenerator {
         return groups;
     }
 
-    // Групування синхронізації за типом
+    // Group synchronization by type
     private groupSyncByType(syncs: SynchronizationPrimitive[]): { [key: string]: SynchronizationPrimitive[] } {
         const groups: { [key: string]: SynchronizationPrimitive[] } = {};
 
@@ -342,7 +342,7 @@ export class GraphGenerator {
         return groups;
     }
 
-    // Генерація HTML-візуалізації графу (без інтерактивності)
+    // Generate HTML visualization of the graph (non-interactive)
     generateHTMLVisualization(threadInfo: ThreadInfo, sourceFilePath?: string): string {
         const graphData = this.generateGraph(threadInfo);
         const positionedNodes = this.calculateNodePositions(graphData.nodes, graphData.edges);
@@ -590,7 +590,7 @@ export class GraphGenerator {
                     </defs>
                     <g id="graphGroup" transform="translate(0,0) scale(1)">`;
 
-        // Відмальовуємо ребра графу (без підписів)
+        // Draw graph edges (without labels)
         graphData.edges.forEach((edge) => {
             const fromNode = positionedNodes.find(n => n.id === edge.from);
             const toNode = positionedNodes.find(n => n.id === edge.to);
@@ -616,7 +616,7 @@ export class GraphGenerator {
             }
         });
 
-        // Відмальовуємо вузли графу
+        // Draw graph nodes
         positionedNodes.forEach(node => {
             const nodeWidth = this.getNodeWidth(node);
             const nodeHeight = this.getNodeHeight(node);
@@ -625,7 +625,7 @@ export class GraphGenerator {
             let nodeClass = 'interactive-node';
             let dataLine = '';
 
-            // Додаємо клас для вузлів з умовами/циклами
+            // Add a class for nodes with conditionals/loops
             if (node.type === 'thread' && node.details && Array.isArray(node.details) && node.details.length > 0) {
                 const t = node.details[0];
                 if (t.line !== undefined) dataLine = `data-line="${t.line}"`;
@@ -659,7 +659,7 @@ export class GraphGenerator {
                                      repeatCount="indefinite"/>
                         </polygon>`;
             } else if (node.shape === 'ellipse' || node.type === 'main') {
-                // Еліпс для головного потоку та змінних
+                // Ellipse for the main thread and variables
                 html += `
                         <ellipse cx="${node.x}" cy="${node.y}" 
                                  rx="${nodeWidth / 2}" ry="${nodeHeight / 2}" 
@@ -673,7 +673,7 @@ export class GraphGenerator {
                                      repeatCount="indefinite"/>
                         </ellipse>`;
             } else {
-                // Прямокутник для потоків
+                // Rectangle for threads
                 const rx = node.type === 'main' as GraphNode['type'] ? '25' : '8';
                 let strokeDasharray = 'none';
 
@@ -698,7 +698,7 @@ export class GraphGenerator {
                         </rect>`;
             }
 
-            // Форматування тексту у вузлі
+            // Format text within the node
             const lines = node.label.replace(/\\n/g, '\n').split('\n');
             const maxLength = this.getMaxTextLength(node);
 
@@ -711,7 +711,7 @@ export class GraphGenerator {
                 let textColor = '#333';
                 let fontWeight = 'normal';
 
-                // Виділення для різних типів рядків
+                // Highlight for different types of lines
                 if (line.includes('[') && line.includes(']')) {
                     textColor = '#b20c0c';
                     fontWeight = 'bold';
@@ -804,7 +804,7 @@ export class GraphGenerator {
 
         function getSvgPoint(evt) {
             const rect = svg.getBoundingClientRect();
-            // координати у viewBox
+            // coordinates in the viewBox
             const x = (evt.clientX - rect.left) * (${svgWidth} / rect.width);
             const y = (evt.clientY - rect.top) * (${svgHeight} / rect.height);
             return { x, y };
@@ -813,7 +813,7 @@ export class GraphGenerator {
         function zoomAt(factor, centerX, centerY) {
             const prevZoom = currentZoom;
             currentZoom = Math.max(0.3, Math.min(3, currentZoom * factor));
-            // Центруємо zoom навколо точки centerX, centerY
+            // Center the zoom around the point centerX, centerY
             currentTranslate.x = (currentTranslate.x - centerX) * (currentZoom / prevZoom) + centerX;
             currentTranslate.y = (currentTranslate.y - centerY) * (currentZoom / prevZoom) + centerY;
             updateTransform();
@@ -844,7 +844,7 @@ export class GraphGenerator {
 
         svg.addEventListener('wheel', (e) => {
             e.preventDefault();
-            // Zoom до точки під курсором
+            // Zoom to the point under the cursor
             const pt = getSvgPoint(e);
             const factor = e.deltaY < 0 ? 1.2 : 1/1.2;
             zoomAt(factor, pt.x, pt.y);
@@ -870,7 +870,7 @@ export class GraphGenerator {
         return html;
     }
 
-    // Визначає ширину вузла в залежності від типу
+    // Determines the width of the node depending on the type
     private getNodeWidth(node: GraphNode): number {
         switch (node.type) {
             case 'main': return 120;
@@ -880,7 +880,7 @@ export class GraphGenerator {
         }
     }
 
-    // Визначає висоту вузла в залежності від типу
+    // Determines the height of the node depending on the type
     private getNodeHeight(node: GraphNode): number {
         switch (node.type) {
             case 'main': return 60;
@@ -890,7 +890,7 @@ export class GraphGenerator {
         }
     }
 
-    // Максимальна довжина тексту в одному рядку вузла
+    // Maximum length of text in a single line of a node
     private getMaxTextLength(node: GraphNode): number {
         switch (node.type) {
             case 'sync': return 12;
@@ -899,7 +899,7 @@ export class GraphGenerator {
         }
     }
 
-    // Визначає стиль лінії для ребра в залежності від типу зв'язку
+    // Determines the line style for an edge depending on the connection type
     private getEdgeStrokeDashArray(edgeType: GraphEdge['type']): string {
         switch (edgeType) {
             case 'creates': return 'none';
@@ -909,7 +909,7 @@ export class GraphGenerator {
         }
     }
 
-    // Розрахунок позицій вузлів для графу
+    // Calculation of node positions for the graph
     private calculateNodePositions(nodes: GraphNode[], edges: GraphEdge[]): GraphNode[] {
         const positionedNodes = [...nodes];
         const nodeWidth = 200;
@@ -949,7 +949,7 @@ export class GraphGenerator {
         return positionedNodes;
     }
 
-    // Генерація текстового звіту
+    // Generate a simple text report
     generateSimpleTextReport(threadInfo: ThreadInfo): string {
         const graphData = this.generateGraph(threadInfo);
         let report = '=== C++ Thread Analysis Report ===\n\n';
